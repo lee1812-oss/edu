@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>빵을그리다 월별 위생교육 · 모바일 수강</title>
+<style>
+  :root{--fresh:#1E6B4A;--crust:#C77D3A;--crust-deep:#A8632A;--ink:#1F2A26;--soft:#5E6B66;--line:#E3E7E4;--paper:#FCFBF7;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;background:#0F3A31;color:var(--ink);}
+  .top{background:linear-gradient(150deg,#123A33,#1E5A48);color:#fff;padding:16px 18px 14px;position:sticky;top:0;z-index:5;}
+  .top b{font-size:17px;display:block;} .top small{color:#BFD9CE;font-size:12px;}
+  .wrap{padding:14px 12px 40px;max-width:640px;margin:0 auto;}
+  .card{background:var(--paper);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px -18px rgba(0,0,0,.6);}
+  .card h2{margin:0 0 10px;font-size:16px;color:var(--fresh);display:flex;align-items:center;gap:8px;}
+  .card h2 .st{margin-left:auto;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:#EEF0EE;color:#7A8580;}
+  .card h2 .st.ok{background:#E9F4EE;color:var(--fresh);}
+  .names{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;}
+  .names button,.months button{font-family:inherit;font-size:15px;font-weight:700;padding:11px 6px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);}
+  .names button.on,.months button.on{background:var(--fresh);color:#fff;border-color:var(--fresh);}
+  .months{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;}
+  .months button{font-size:14px;padding:9px 4px;} .months button:disabled{opacity:.35;}
+  .topic{font-size:20px;font-weight:800;line-height:1.25;margin:0 0 4px;letter-spacing:-.02em;} .sub{color:var(--soft);font-size:13.5px;margin:0 0 10px;}
+  ol.items{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .it{display:flex;gap:10px;} .it .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--fresh);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;}
+  .it .t{font-size:15.5px;font-weight:700;line-height:1.3;} .it .d{font-size:13px;color:var(--soft);margin-top:2px;line-height:1.35;}
+  .it.head{margin-top:6px;} .it.head .t{color:var(--crust-deep);font-size:14px;letter-spacing:.02em;}
+  .vid{border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;margin-bottom:10px;}
+  .vid .frame{position:relative;aspect-ratio:16/9;background:#000;} .vid .frame iframe,.vid .frame div{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  .vid .meta{display:flex;align-items:center;gap:8px;padding:10px 12px;} .vid .meta b{flex:1;font-size:14px;line-height:1.3;}
+  .pill{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;background:#EEF0EE;color:#7A8580;white-space:nowrap;}
+  .pill.ok{background:#E9F4EE;color:var(--fresh);} .pill.play{background:#FFF0E0;color:var(--crust-deep);}
+  .btn{font-family:inherit;font-weight:800;font-size:15px;padding:13px 16px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);width:100%;}
+  .btn.primary{background:linear-gradient(150deg,var(--crust),var(--crust-deep));color:#fff;border-color:transparent;}
+  .btn.green{background:var(--fresh);color:#fff;border-color:transparent;}
+  .btn:disabled{opacity:.45;}
+  .q{border:1.5px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#fff;}
+  .q .qt{font-size:15px;font-weight:800;line-height:1.35;} .q .qh{font-size:12.5px;color:var(--soft);margin-top:4px;}
+  .q textarea{width:100%;margin-top:8px;font-family:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:10px;padding:10px;}
+  .q .ans{margin-top:8px;padding:9px 11px;border-radius:10px;background:#E9F4EE;color:var(--fresh);font-weight:700;font-size:14px;}
+  .q .mark{display:flex;gap:8px;margin-top:8px;} .q .mark button{flex:1;font-family:inherit;font-weight:800;font-size:15px;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:#fff;}
+  .q .mark button.o.on{background:var(--fresh);color:#fff;border-color:var(--fresh);} .q .mark button.x.on{background:#C0392B;color:#fff;border-color:#C0392B;}
+  .score{font-size:15px;font-weight:800;text-align:center;padding:10px;border-radius:12px;background:#FFF6EA;color:var(--crust-deep);margin-top:6px;}
+  canvas.sig{width:100%;height:170px;border:2px dashed #C9D3CE;border-radius:12px;background:#fff;touch-action:none;display:block;}
+  .row{display:flex;gap:8px;margin-top:8px;}
+  .done{text-align:center;padding:26px 14px;} .done .big{font-size:44px;} .done h3{margin:8px 0 4px;font-size:20px;} .done p{margin:0;color:var(--soft);font-size:14px;line-height:1.5;}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:10px;max-height:120px;overflow:auto;margin-top:8px;}
+  .hint{font-size:12.5px;color:var(--soft);line-height:1.5;margin-top:8px;}
+  .prog{position:sticky;bottom:0;background:rgba(15,58,49,.96);color:#fff;padding:10px 14px;font-size:13px;font-weight:700;display:flex;gap:10px;align-items:center;z-index:5;}
+  .prog .bar{flex:1;height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;} .prog .bar i{display:block;height:100%;background:#FFB347;width:0;transition:.3s;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="top"><b>🍞 빵을그리다 월별 위생교육 · 모바일 수강</b><small id="topSub">이름과 교육 월을 고르고 순서대로 진행하세요</small><small id="srvTag" style="display:block;margin-top:4px;font-weight:700;"></small></div>
+<div class="wrap">
+  <div class="card" id="cardWho">
+    <h2>1. 나는 누구? <span class="st" id="stWho">선택</span></h2>
+    <div class="names" id="names"></div>
+    <div class="months" id="months"></div>
+  </div>
+  <div id="course" class="hidden">
+    <div class="card" id="cardContent">
+      <h2>2. 교육 내용 <span class="st" id="stContent">읽기</span></h2>
+      <div class="topic" id="topic"></div><div class="sub" id="subtitle"></div>
+      <ol class="items" id="items"></ol>
+      <div style="margin-top:12px;"><button class="btn green" id="btnRead">✔ 내용을 모두 읽었습니다</button></div>
+    </div>
+    <div class="card" id="cardVideos">
+      <h2>3. 교육 영상 <span class="st" id="stVideos">0/0</span></h2>
+      <div id="videos"></div>
+      <div class="hint">영상을 끝까지 보면 자동으로 ✔ 처리됩니다. 유튜브가 열리지 않는 경우 일정 시간 후 「시청 완료」 버튼이 나타납니다.</div>
+    </div>
+    <div class="card" id="cardQuiz">
+      <h2>4. 위생 퀴즈 <span class="st" id="stQuiz">0/0</span></h2>
+      <div id="quiz"></div>
+      <div class="score" id="score"></div>
+      <div class="hint">답을 적은 뒤 「정답 보기」를 누르고, 맞았으면 O · 틀렸으면 X를 눌러 스스로 채점합니다. 적은 답은 그대로 기록됩니다.</div>
+    </div>
+    <div class="card" id="cardSign">
+      <h2>5. 서명하고 완료 <span class="st" id="stSign">대기</span></h2>
+      <canvas class="sig" id="sig"></canvas>
+      <div class="row"><button class="btn" id="sigClear">지우기</button></div>
+      <div class="row"><button class="btn primary" id="btnDone" disabled>수강 완료 · 서명 제출</button></div>
+      <div class="hint" id="doneHint">2·3·4단계를 모두 마치고 서명하면 제출할 수 있습니다.</div>
+    </div>
+    <div class="card hidden" id="cardDone">
+      <div class="done"><div class="big">🎉</div><h3 id="doneTitle">수강 완료!</h3><p id="doneMsg"></p></div>
+      <div id="fallback" class="hidden"><div class="hint">서버로 보내지 못했습니다. 아래 수강 확인 코드를 복사해 사무실(품질관리팀)에 카톡으로 보내 주세요.</div><div class="code" id="code"></div><div class="row"><button class="btn" id="btnCopy">코드 복사</button><button class="btn primary" id="btnRetry">다시 전송</button></div></div>
+    </div>
+  </div>
+</div>
+<div class="prog"><span id="progT">진행률</span><div class="bar"><i id="progB"></i></div><span id="progP">0%</span></div>
+<script type="application/json" id="eduData">{"year":2026,"defaultMonth":8,"roster":["김영복","황정기","박태일","이혜영","서재우","이정현","김명우","오승태"],"scriptUrl":"https://script.google.com/macros/s/AKfycbw6NZNLzxKtcU7aV4n3buQ8iQ-gHSbPQnehXogLHyrTFkBAvt9EHFL76iveuqkKES4e/exec","months":[{"topic":"작업실 및 제조시설 관리","subtitle":"작업실·제조시설 구역별 관리 방법","items":[{"no":1,"title":"작업장 관리","desc":""},{"no":2,"title":"천정 및 벽 관리","desc":""},{"no":3,"title":"문 관리","desc":""},{"no":4,"title":"창문 관리","desc":""},{"no":5,"title":"바닥 관리","desc":""},{"no":6,"title":"배수시설 관리","desc":""},{"no":7,"title":"환기시설 관리","desc":""},{"no":8,"title":"방충·방서 관리","desc":""},{"no":9,"title":"위생전실·화장실·탈의실 관리","desc":""},{"no":10,"title":"용수·급수·배관 관리","desc":""},{"no":11,"title":"영업장 시설 및 제조설비 관리","desc":""},{"head":"HACCP 교육 · 준비"},{"no":12,"title":"HACCP 팀 구성","desc":""},{"no":13,"title":"제품설명서 작성","desc":""}],"videos":[{"id":"dPaFuNSH1FM","title":"HACCP 인증 선행요건 - 기본편","dur":0}],"quiz":[{"q":"작업이 끝나면 작업장·설비·도구를 주기적으로 ○○하고 ○○해서 교차오염을 막습니다. 두 낱말은?","a":"세척, 소독","h":"먼저 씻고, 그다음 균을 잡아요"},{"q":"유통기한이 지난 소독제, 아깝지만 어떻게 해야 할까요?","a":"사용하지 않고 폐기","h":"효능이 떨어져요"},{"q":"소독제는 ‘어떤’ 제품을 ‘어떻게’ 써야 할까요?","a":"식품용 살균소독제를 표시된 방법대로 정량 사용","h":"라벨을 보세요"},{"q":"HACCP 준비 5단계의 첫 번째 단계는?","a":"HACCP 팀 구성","h":"혼자서는 못 해요"},{"q":"제품명·원료·보관조건·소비기한을 정리해 둔 문서의 이름은?","a":"제품설명서","h":"제품의 자기소개서"}]},{"topic":"제조공정 위생 관리","subtitle":"입고 · 내포장 · 금속검출 · 외포장 · 보관","items":[{"no":1,"title":"입고","desc":"원부재료 운송차량 온도 및 외관상태 확인 · 입고 및 반품(폐기) 절차"},{"no":2,"title":"내포장","desc":"내포장재 및 이물 혼입 방지 방법"},{"no":3,"title":"금속검출","desc":"금속검출기 사용방법 · 테스트 방법 및 기록 관리 · 중요관리점(CCP)"},{"no":4,"title":"외포장","desc":"외포장 방법"},{"no":5,"title":"보관","desc":"보관 방법 및 절차"}],"videos":[{"id":"RECWbov5UkU","title":"HACCP 운영개선 - 보관관리","dur":0}],"quiz":[{"q":"원부재료가 도착하면 운송차량의 ○○와 원부재료의 ○○ 상태를 확인합니다.","a":"온도, 외관","h":"차는 차갑게, 물건은 멀쩡하게"},{"q":"우리 공장의 중요관리점(CCP) 공정을 하나만 말해 보세요.","a":"금속검출 (오븐가열·급속냉동·크림배합도 정답)","h":"모니터링 일지가 있는 공정"},{"q":"금속검출기 테스트피스는 언제 통과시켜 확인하나요?","a":"작업 전 · 작업 중(2시간마다) · 작업 후","h":"하루 세 번은 기본"},{"q":"손과 손톱에는 식중독균이 있을 수 있어 항상 ○○하게 관리해야 합니다.","a":"청결","h":"두 글자"},{"q":"설사·복통·상처·염증이 있는 직원은 어떻게 해야 하나요?","a":"식품 제조 작업에 들어가지 않고 보고한다(작업 배제)","h":"오늘은 쉬는 게 맞아요"}]},{"topic":"제조공정 위생 관리","subtitle":"입고 · 내포장 · 금속검출 · 외포장 · 보관","items":[{"no":1,"title":"입고","desc":"원부재료 운송차량 온도 및 외관상태 확인 · 입고 및 반품(폐기) 절차"},{"no":2,"title":"내포장","desc":"내포장재 및 이물 혼입 방지 방법"},{"no":3,"title":"금속검출","desc":"금속검출기 사용방법 · 테스트 방법 및 기록 관리 · 중요관리점(CCP)"},{"no":4,"title":"외포장","desc":"외포장 방법"},{"no":5,"title":"보관","desc":"보관 방법 및 절차"}],"videos":[{"id":"gxCKrXuZF0o","title":"개인위생과 세척소독관리","dur":0}],"quiz":[{"q":"작업장에 들어가기 전 착용하는 위생 복장 세 가지는?","a":"위생복, 위생모, 위생화 (마스크·앞치마도 정답)","h":"머리부터 발끝까지"},{"q":"작업 중 손을 다시 씻고 소독해야 하는 순간을 하나만 말해 보세요.","a":"귀·입·코·머리를 만졌을 때 / 쓰레기·걸레를 만졌을 때 / 작업 품목이 바뀔 때","h":"손이 어디 갔다 왔나요?"},{"q":"종사자 건강진단(보건증)은 몇 년에 몇 번 받아야 하나요?","a":"연 1회","h":"1년에 한 번"},{"q":"작업장에 들어갈 때 빼고 들어가야 하는 것은?","a":"반지·시계·귀걸이 등 장신구 (화장·매니큐어도 정답)","h":"이물의 단골손님"},{"q":"외부 방문자가 작업장에 들어올 때는 어떻게 해야 하나요?","a":"종사자와 같은 위생복장을 착용하고 손 세척·소독 후 출입(출입 기록)","h":"손님도 예외 없음"}]},{"topic":"위생전실 및 위생설비 청소관리","subtitle":"시설별 청소·소독방법 · 세제/소독제/도구 및 청소 주기","items":[{"no":1,"title":"위생전실","desc":""},{"no":2,"title":"장화세척기","desc":""},{"no":3,"title":"손세정대","desc":""},{"no":4,"title":"손건조기","desc":""},{"no":5,"title":"손소독기","desc":""},{"no":6,"title":"발판소독조","desc":""},{"no":7,"title":"옷장(위생복 보관함)","desc":""},{"no":8,"title":"신발장","desc":""},{"no":9,"title":"포충등·에어커튼","desc":""},{"head":"HACCP 교육 · 준비 5단계"},{"no":10,"title":"공정흐름도 작성","desc":""},{"no":11,"title":"공정흐름도 현장 확인","desc":""}],"videos":[{"id":"Lzn4N6YEHSM","title":"HACCP 인증 선행요건 - 심화편","dur":0},{"id":"HaY3arYBsUs","title":"공정흐름도 작성 · 현장확인 (준비 4·5단계)","dur":0}],"quiz":[{"q":"위생전실에서 손을 씻는 과정의 마지막 단계는?","a":"손 소독(알코올)","h":"씻고 말리고 그다음"},{"q":"바닥은 하루 1회, 벽은 ○ 1회, 그 외 작업장 시설은 ○ 1회 세척·소독합니다.","a":"주, 월","h":"주간, 월간"},{"q":"에어샤워·발판소독조·손세정대 같은 위생설비 점검은 얼마나 자주 기록하나요?","a":"매주(주 1회, 위생설비 점검 체크리스트)","h":"W2 일지"},{"q":"공정흐름도를 그린 뒤 반드시 해야 하는 것은?","a":"현장 확인 (실제 작업과 같은지)","h":"그림과 현실 비교"},{"q":"손건조기나 손소독기가 고장 났다면 가장 먼저?","a":"즉시 보고하고 개선조치를 기록한다","h":"모른 척은 금물"}]},{"topic":"제조설비 및 작업장 청결관리","subtitle":"세척·소독 기준 (작업실 · 작업장 · 시설/설비)","items":[{"no":1,"title":"작업실 및 부대시설 세척·소독 기준","desc":"바닥·내벽·배수구·천장·조명·세면대·쓰레기통·세척소독도구·옷장·신발장·행주·에어커튼"},{"no":2,"title":"작업장 세척·소독 기준","desc":"작업장(바닥·벽·천장·환기시설·조명시설) · 위생복 · 제조설비 및 도구(제품접촉면 내·외부)"},{"no":3,"title":"시설·설비 목록 및 세척·소독 기준","desc":"보관창고·작업대·금속검출기·도구류(도마·칼 등)·P박스 등"}],"videos":[{"id":"cOD_H2HQWSo","title":"시설·설비관리","dur":0}],"quiz":[{"q":"세척과 소독 중 먼저 하는 것은?","a":"세척 (씻고 헹궈 말린 뒤 소독)","h":"때부터 벗겨야 약이 먹혀요"},{"q":"조명시설을 청소할 때 다른 시설과 다르게 사용하지 않는 것은?","a":"세제(물) — 먼지 제거 위주","h":"전기 + 물 = ✗"},{"q":"믹서기·작업대처럼 제품이 닿는 면은 소독 후 어떻게 하나요?","a":"자연건조","h":"수건으로 닦지 않아요"},{"q":"칼·도마·앞치마·고무장갑은 어떻게 사용해야 하나요?","a":"원부재료별·구역별로 구분 사용","h":"섞어 쓰면 교차오염"},{"q":"기계·기구 세척·소독 결과를 기록하는 일지의 이름은?","a":"기계·기구류의 세척 및 소독관리 대장 (D5)","h":"오승태 담당"}]},{"topic":"이물관리","subtitle":"작업장 이물 관리 계획","items":[{"no":1,"title":"이물의 정의","desc":""},{"no":2,"title":"원료 중의 이물 방지","desc":""},{"no":3,"title":"종업원에 의한 이물 혼입 방지","desc":""},{"no":4,"title":"작업 중 이물 혼입 방지","desc":""},{"no":5,"title":"해충에 의한 혼입 방지","desc":""}],"videos":[{"id":"j1g5B1aavNw","title":"HACCP 운영개선 - 이물관리","dur":0},{"id":"y4TH0ZWrhy4","title":"HACCP 운영개선 - 방충방서","dur":0}],"quiz":[{"q":"이물의 세 가지 종류는?","a":"동물성, 식물성, 광물성","h":"동·식·광"},{"q":"광물성 이물의 예를 두 가지 말해 보세요.","a":"흙, 모래, 유리, 금속, 도자기 파편 중 2개","h":"딱딱한 것들"},{"q":"고객이 신고한 유리·금속 이물은 어떻게 보관하나요?","a":"덮개 있는 투명용기에 넣고 라벨을 붙여 상온보관","h":"투명 + 라벨"},{"q":"벌레 같은 곤충류 이물은 어떻게 보관하나요?","a":"밀폐용기에 넣고 라벨 부착 후 냉장보관","h":"차갑게"},{"q":"이물 발생을 막기 위해 작업자가 지킬 것을 하나만 말해 보세요.","a":"위생모 착용(머리카락) / 장신구 금지 / 포장재 조각 확인 / 방충망 점검 등","h":"내 몸에서 나오는 것부터"}]},{"topic":"원·부재료 관리 및 공정별 위생·안전 수행 지침","subtitle":"HACCP 기준에 따른 원·부자재/완제품 관리 · 공정관리","items":[{"head":"원·부자재 / 완제품 관리"},{"no":1,"title":"냉동 원재료 도착 즉시 검수","desc":"상온 장시간 방치 금지"},{"no":2,"title":"입고 시 시험성적서 수령","desc":"성적서 수령이 어려운 품목은 육안검사 후 입고"},{"no":3,"title":"부적합 원·부재료 즉시 반품","desc":"유통기한 경과 · 성적서 부적합 · 육안검사 부적합"},{"no":4,"title":"저장조건별 신속 보관","desc":"냉동창고·창고로 운반 · 교차오염 없도록 분리 보관"},{"no":5,"title":"선입선출 · 회수 대비 관리","desc":"판매처·연락처 정확히 파악"},{"head":"공정관리"},{"no":6,"title":"전처리공정","desc":"바닥 60cm 이상 높이 작업 · 칼·도마·앞치마·장갑 구역별 구분 · 식품온도 15℃ 이하 소량 취급"},{"no":7,"title":"해동","desc":"냉장해동(10℃ 이하)·전자레인지·흐르는 물·상온(시간관리) · 해동 후 재동결 금지"},{"no":8,"title":"세척공정","desc":"구분 사용 · 처리 후 보관기준에 따른 온도관리"},{"head":"HACCP 교육 · 7원칙 (1)"},{"no":9,"title":"위해요소 분석","desc":"원칙 1"},{"no":10,"title":"중요관리점(CCP) 결정","desc":"원칙 2"},{"no":11,"title":"한계기준(CL) 설정","desc":"원칙 3"}],"videos":[{"id":"CMvMFJWrN3Q","title":"위해요소 분석 (기본원칙 1)","dur":0},{"id":"VvqTKz4cVwA","title":"중요관리점(CCP) 결정 (기본원칙 2)","dur":0},{"id":"bKRBdlVL1fo","title":"한계기준(CL) 설정 (기본원칙 3)","dur":0},{"id":"QOTXuGDB5CY","title":"HACCP 7원칙 12절차","dur":0}],"quiz":[{"q":"냉동 원재료가 도착하면 가장 먼저 해야 할 일은?","a":"즉시 검수 (상온 방치 금지)","h":"녹기 전에"},{"q":"시험성적서를 받기 어려운 농산물 등은 무엇을 하고 입고하나요?","a":"육안검사 실시 후 입고","h":"눈으로 확인"},{"q":"냉장·냉동 식품을 절단·소분할 때 식품 온도는 몇 ℃를 넘지 않게 하나요?","a":"15℃","h":"열다섯"},{"q":"해동하고 남은 원료는 어떻게 하나요?","a":"재동결 금지 (폐기)","h":"다시 얼리면 ✗"},{"q":"HACCP 7원칙의 첫 번째 원칙은?","a":"위해요소 분석","h":"무엇이 위험한지부터"}]},{"topic":"HACCP 운영 개선 사례 · 영업장 관리","subtitle":"위생교육 (식약처 동영상 시청)","items":[{"no":1,"title":"식품제조·가공업 법적 준수사항","desc":"관련 서류·검사기록 보관 · 건강진단·위생교육 실시 · 냉장·냉동·가열시설 온도관리 · 작업자 복장 및 개인위생"},{"no":2,"title":"이물·방충·방서 관리","desc":"시설·도구 및 작업자 위생관리 · 이물 혼입 방지 · 출입구·환풍구 외부 유입 차단 · 포충등·트랩 정기 관리"},{"no":3,"title":"소비자 불만·이물·회수 관리","desc":"이물 신고 시 기한 내 관할 관청 보고 · 불만·증거품 기록 보관 · 위해 발생 시 회수 및 보고"},{"no":4,"title":"주요 식중독균 관리","desc":"리스테리아: 냉장온도 관리 · 황색포도상구균: 개인위생·실온 방치 방지 · 여시니아: 육류 위생·저온 관리"},{"no":5,"title":"소비기한·표시 관리","desc":"소비기한 준수 및 경과 제품 관리 · 알레르기 유발물질 표시 · 허위·과장 표시·광고 금지"},{"no":6,"title":"용수·세척·소독 관리","desc":"지하수 정기 수질검사 · 원료별 도구 구분 사용 · 세척·소독 및 위생설비 정기 점검"}],"videos":[{"id":"ELIrOXSHS-Q","title":"식품제조가공업소 식품 위생 관리 방안과 사례","dur":0},{"id":"O9oCfgpUiMM","title":"영업장 관리","dur":0}],"quiz":[{"q":"식품 작업자가 매년 받아야 하는 검진과 교육은?","a":"건강진단(보건증), 위생교육","h":"몸 검사 + 공부"},{"q":"소비자에게 이물 신고를 받으면 어떻게 해야 하나요?","a":"기한 내 관할 관청에 보고하고 증거품·기록을 보관","h":"숨기면 안 돼요"},{"q":"냉장온도를 잘 지키면 예방되는 식중독균은?","a":"리스테리아","h":"추위에 강한 녀석"},{"q":"실온에 오래 방치하면 늘어나는, 손 위생과 관련된 균은?","a":"황색포도상구균","h":"손에 사는 균"},{"q":"소비기한이 지난 제품은 어떻게 하나요?","a":"사용·판매하지 않고 격리 후 폐기","h":"미련 없이"}]},{"topic":"HACCP 운영 개선 사례 · 위생관리","subtitle":"동선 · 온습도 · 방충방서 · 개인위생 · 교육훈련 · 폐기물 · 세척소독","items":[{"no":1,"title":"동선 계획 및 공정간 오염방지","desc":""},{"no":2,"title":"작업장 내 온습도 관리 기준","desc":""},{"no":3,"title":"방충, 방서 관리","desc":""},{"no":4,"title":"개인 위생 관리","desc":""},{"no":5,"title":"교육훈련 관리","desc":""},{"no":6,"title":"폐기물 관리","desc":""},{"no":7,"title":"세척소독 관리","desc":""}],"videos":[{"id":"roQkrCNL8mI","title":"HACCP 주요 지적사항 및 평가사례 (선행요건관리)","dur":0},{"id":"09Sv1tHiQvA","title":"작업장 위생관리","dur":1752}],"quiz":[{"q":"청결구역과 일반구역을 나누고 동선을 정하는 이유는?","a":"교차오염 방지","h":"섞이지 않게"},{"q":"작업장 온도·습도 기준을 지키는 이유는?","a":"미생물 증식 방지","h":"균이 좋아하는 환경 ✗"},{"q":"포충등·트랩은 얼마나 자주 점검하고 기록하나요?","a":"매주 (금요일, W6 통합점검표)","h":"오승태 담당"},{"q":"폐기물 용기의 조건을 하나만 말해 보세요.","a":"뚜껑 있는 전용 용기 / 주기적 세척·소독 / 작업 종료 후 반출","h":"뚜껑!"},{"q":"위생복은 얼마나 자주 세탁하나요?","a":"매주 (오염 시 즉시)","h":"주 1회는 기본"}]},{"topic":"HACCP 운영 개선 사례 · 제조·가공시설 설비 관리","subtitle":"위생교육 · HACCP 교육(한계기준 설정, 감시방법 설정)","items":[{"head":"위생교육 · 제조·가공시설 설비 관리"},{"no":1,"title":"배치 및 청결 관리","desc":""},{"no":2,"title":"유지·보수 이력 기록 관리","desc":""},{"no":3,"title":"냉장·냉동시설 설비 관리","desc":"온도관리"},{"head":"HACCP 교육 · 한계기준 설정, 감시방법 설정"},{"no":4,"title":"한계기준 설정","desc":"한계기준 관리항목 및 세부기준 구체적 설정"},{"no":5,"title":"모니터링 체계 확립","desc":"결과에 대한 기록방법과 실제 기록방법 일치"},{"no":6,"title":"개선조치 방법 수립","desc":""},{"no":7,"title":"검증절차 및 방법 수립","desc":""}],"videos":[{"id":"9_Bs_2Dtg9o","title":"모니터링 체계 확립 & 개선조치 방법 수립 (기본원칙 4, 5)","dur":0},{"id":"qniTp878jS8","title":"검증 절차 및 방법 수립, 문서화 및 기록 유지 (기본원칙 6, 7)","dur":0}],"quiz":[{"q":"냉장·냉동창고 온도는 어느 일지에 기록하나요?","a":"창고 보관(냉동/냉장/실온) 위생 점검 일지 (W8)","h":"김명우 담당"},{"q":"온도계·저울·금속검출기는 얼마나 자주 검·교정하나요?","a":"연 1회 이상","h":"1년에 한 번 이상"},{"q":"한계기준을 벗어났을 때 취하는 조치를 뭐라고 하나요?","a":"개선조치","h":"HACCP 원칙 5"},{"q":"HACCP 7원칙의 마지막(7번째) 원칙은?","a":"문서화 및 기록 유지","h":"기록이 증거"},{"q":"설비의 고무패킹이나 볼트가 헐거워진 걸 발견했다면?","a":"이물 혼입 위험 → 즉시 보고·정비하고 기록 (M6)","h":"작은 부품이 큰 사고"}]},{"topic":"HACCP 운영 개선 사례 · 용수관리 · 보관·운송관리","subtitle":"수질검사 · 입고 검사 · 보관관리 · 운송차량 관리","items":[{"head":"용수관리"},{"no":1,"title":"수질검사","desc":"식품제조·가공에 사용되는 용수는 먹는물 수질기준 적합 필요 · 지하수 사용 시 살균·소독장치 구비"},{"head":"보관·운송관리"},{"no":2,"title":"원·부재료 입고 검사","desc":""},{"no":3,"title":"보관관리","desc":"원부자재, 반제품 및 완제품은 구분 관리하고, 바닥이나 벽에 밀착되지 않도록 적재·관리"},{"no":4,"title":"운송차량 관리","desc":"냉장·냉동 운송차량의 경우 냉장·냉동 상태를 유지 및 기록 관리"}],"videos":[{"id":"IY1lo_dgwp8","title":"HACCP 인증 사후관리 Tip & Talk","dur":0},{"id":"gc30CFf3G98","title":"용수 및 원부자재 보관·운송 관리","dur":0}],"quiz":[{"q":"지하수 수질검사는 얼마나 자주 하나요?","a":"연 1회 이상 (먹는물 수질기준)","h":"1년"},{"q":"원부자재·완제품을 바닥·벽에서 띄워 보관하는 이유는?","a":"습기·오염 방지, 청소 용이","h":"바닥에 붙이면 ✗"},{"q":"냉장·냉동 운송차량 관리의 핵심 두 가지는?","a":"냉장·냉동 상태 유지, 온도 기록","h":"유지 + 기록"},{"q":"먼저 들어온 원료를 먼저 사용하는 원칙을 뭐라고 하나요?","a":"선입선출","h":"네 글자"},{"q":"입고 검사 때 확인하는 항목을 하나만 말해 보세요.","a":"포장상태 / 유효기간 / 차량온도 / 시험성적서 / 육안검사","h":"E1·육안검사일지"}]},{"topic":"HACCP 운영 개선 사례 · 검사관리","subtitle":"완제품 검사 · 검교정 관리","items":[{"head":"완제품 검사"},{"no":1,"title":"제품 검사 실시","desc":"자체 실험실에서 실시하거나 검사기관과의 협약에 의하여 실시"},{"no":2,"title":"검사 계획 및 기록","desc":"자사 제품 검사 계획 수립 및 검사 관련 내역 기록"},{"head":"검교정 관리"},{"no":3,"title":"온도측정 장치 검·교정","desc":"냉장·냉동 및 가열처리 시설 등 연 1회 이상 실시"},{"no":4,"title":"자체 검교정 기준","desc":"검교정 방법 등 기준서에 수립"},{"no":5,"title":"표준기를 이용한 자체 검·교정 인정","desc":""},{"no":6,"title":"검교정 일지 작성 방법","desc":""}],"videos":[{"id":"0ZX4P3RmUx4","title":"제품 검사 및 회수 프로그램 관리","dur":0}],"quiz":[{"q":"완제품 자가품질검사는 얼마나 자주 하나요?","a":"홀수 달 (2개월마다)","h":"1·3·5·7·9·11월"},{"q":"온도측정 장치의 검·교정 주기는?","a":"연 1회 이상","h":"Y2 자체 검교정 일지"},{"q":"검교정 결과가 허용오차를 벗어나면?","a":"수리·교체·재교정 후 사용하고 기록","h":"그냥 쓰면 ✗"},{"q":"원료 입고 시 공급업체에서 받아 두는 서류는?","a":"시험성적서(자가품질검사 성적서)","h":"Y5 입고 성적서 관리"},{"q":"올해 배운 HACCP 7원칙 중 기억나는 원칙 하나를 말해 보세요.","a":"위해요소 분석 / CCP 결정 / 한계기준 / 모니터링 / 개선조치 / 검증 / 문서화·기록 중 하나","h":"7개 중 아무거나"}]}]}</script>
+<script>
+(function(){
+"use strict";
+var DATA = JSON.parse(document.getElementById("eduData").textContent);
+var $ = function(s){ return document.querySelector(s); };
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+var state = { name:"", month:0, read:false, watched:{}, marks:{}, answers:{}, sigData:"", done:false };
+var LS = "bggd_mobile_edu_v1";
+try{ var saved = JSON.parse(localStorage.getItem(LS)||"null"); if(saved && saved.year===DATA.year) state = Object.assign(state, saved); }catch(e){}
+function persist(){ state.year = DATA.year; try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+function month(){ return DATA.months[state.month] || null; }
+
+// 1. 이름/월
+function renderWho(){
+  var nm = $("#names"); nm.innerHTML = DATA.roster.map(function(n){ return '<button class="'+(state.name===n?"on":"")+'">'+esc(n)+'</button>'; }).join("");
+  Array.prototype.forEach.call(nm.querySelectorAll("button"), function(b){ b.onclick = function(){ state.name = b.textContent; persist(); renderWho(); renderCourse(); }; });
+  var ms = $("#months"); ms.innerHTML = DATA.months.map(function(m,i){ var has = m && (m.topic||"").trim(); return '<button '+(has?"":"disabled")+' class="'+(state.month===i?"on":"")+'">'+(i+1)+'월</button>'; }).join("");
+  Array.prototype.forEach.call(ms.querySelectorAll("button"), function(b,i){ b.onclick = function(){ if(state.month!==i){ state.month=i; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; } persist(); renderWho(); renderCourse(); }; });
+  $("#stWho").textContent = state.name ? state.name+" · "+(state.month+1)+"월" : "선택"; $("#stWho").className = "st"+(state.name?" ok":"");
+  $("#topSub").textContent = state.name ? DATA.year+"년 "+(state.month+1)+"월 교육 · "+state.name : "이름과 교육 월을 고르고 순서대로 진행하세요";
+}
+
+// 2. 내용
+function renderCourse(){
+  var m = month(); if(!state.name || !m){ $("#course").classList.add("hidden"); updateProg(); return; }
+  $("#course").classList.remove("hidden");
+  if(typeof sizeCanvas==="function" && cv && Math.abs(cv.getBoundingClientRect().width*(window.devicePixelRatio||1)-cv.width)>2) sizeCanvas();
+  $("#topic").textContent = m.topic||""; $("#subtitle").textContent = m.subtitle||"";
+  $("#items").innerHTML = (m.items||[]).map(function(it){ if(it.head!=null) return '<li class="it head"><span class="t">▍ '+esc(it.head)+'</span></li>'; return '<li class="it"><span class="n">'+(it.no||"")+'</span><span><span class="t">'+esc(it.title)+'</span>'+(it.desc?'<span class="d">'+esc(it.desc)+'</span>':'')+'</span></li>'; }).join("");
+  $("#stContent").textContent = state.read ? "완료" : "읽기"; $("#stContent").className = "st"+(state.read?" ok":"");
+  $("#btnRead").disabled = state.read; $("#btnRead").textContent = state.read ? "✔ 내용 확인 완료" : "✔ 내용을 모두 읽었습니다";
+  renderVideos(); renderQuiz(); renderSign(); updateProg();
+  if(state.done){ $("#cardDone").classList.remove("hidden"); }
+}
+$("#btnRead").onclick = function(){ state.read = true; persist(); renderCourse(); };
+
+// 3. 영상 (YouTube IFrame API)
+var players = {}, ytReady = false, ytFailed = false;
+window.onYouTubeIframeAPIReady = function(){ ytReady = true; mountPlayers(); };
+(function loadYT(){ var s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; s.onerror = function(){ ytFailed = true; renderVideos(); }; document.head.appendChild(s); setTimeout(function(){ if(!ytReady){ ytFailed = true; renderVideos(); } }, 8000); })();
+function renderVideos(){
+  var m = month(); var vs = (m && m.videos)||[];
+  var box = $("#videos");
+  box.innerHTML = vs.length ? vs.map(function(v,i){ var ok = !!state.watched[v.id]; return '<div class="vid" data-i="'+i+'"><div class="frame"><div id="yt_'+i+'"></div></div><div class="meta"><b>'+esc(v.title)+(v.dur?' <span style="color:#7A8580;font-weight:600;font-size:12px;">'+fmt(v.dur)+'</span>':'')+'</b><span class="pill '+(ok?"ok":"")+'" id="pill_'+i+'">'+(ok?"✔ 시청 완료":"미시청")+'</span></div>'+(ok?'':'<div class="row" style="padding:0 12px 12px;margin:0;"><button class="btn manual hidden" id="man_'+i+'">시청 완료</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 교육 영상이 없습니다.</div>';
+  var n = vs.filter(function(v){ return state.watched[v.id]; }).length;
+  $("#stVideos").textContent = n+"/"+vs.length; $("#stVideos").className = "st"+(vs.length && n===vs.length?" ok":"");
+  mountPlayers();
+}
+function fmt(sec){ var m=Math.floor(sec/60), s=sec%60; return m+":"+(s<10?"0":"")+s; }
+function mountPlayers(){
+  var m = month(); var vs = (m && m.videos)||[];
+  vs.forEach(function(v,i){
+    var host = document.getElementById("yt_"+i); if(!host) return;
+    if(ytReady && window.YT && YT.Player && !host.dataset.mounted){
+      host.dataset.mounted = "1";
+      players[i] = new YT.Player("yt_"+i, { videoId:v.id, playerVars:{rel:0, playsinline:1, modestbranding:1}, events:{
+        onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED){ markWatched(v.id); } else if(e.data===YT.PlayerState.PLAYING){ var p=document.getElementById("pill_"+i); if(p && !state.watched[v.id]){ p.textContent="▶ 시청 중"; p.className="pill play"; } armManual(i, v); } } } });
+    } else if(ytFailed && !host.dataset.mounted){
+      host.dataset.mounted = "1";
+      host.innerHTML = '<a href="https://www.youtube.com/watch?v='+v.id+'" target="_blank" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none;font-weight:800;background:#123A33;">▶ 유튜브 앱에서 보기</a>';
+      armManual(i, v, 0);
+    }
+  });
+}
+function armManual(i, v, delay){ // 끝까지 재생 감지가 안 될 때: 재생 시간(또는 60초) 뒤 수동 완료 버튼
+  var b = document.getElementById("man_"+i); if(!b || b.dataset.armed) return; b.dataset.armed="1";
+  var wait = delay!=null ? delay : Math.max(30, Math.round((v.dur||60)*0.8))*1000;
+  setTimeout(function(){ b.classList.remove("hidden"); b.onclick = function(){ if(confirm("영상을 끝까지 보셨나요?")) markWatched(v.id); }; }, wait);
+}
+function markWatched(id){ state.watched[id] = new Date().toISOString(); persist(); renderVideos(); renderSign(); updateProg(); }
+
+// 4. 퀴즈 (자가 채점)
+function renderQuiz(){
+  var m = month(); var Q = (m && m.quiz)||[]; var box = $("#quiz");
+  box.innerHTML = Q.length ? Q.map(function(x,i){ var a = state.answers[i]||{}; var mk = state.marks[i]; return '<div class="q" data-i="'+i+'"><div class="qt">Q'+(i+1)+'. '+esc(x.q)+'</div>'+(x.h?'<div class="qh">💡 힌트: '+esc(x.h)+'</div>':'')+'<textarea rows="2" placeholder="답을 적으세요">'+esc(a.text||"")+'</textarea>'+(a.shown?'<div class="ans">정답 · '+esc(x.a)+'</div><div class="mark"><button class="o '+(mk===true?"on":"")+'">O 맞았어요</button><button class="x '+(mk===false?"on":"")+'">X 틀렸어요</button></div>':'<div class="row"><button class="btn show">정답 보기</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 퀴즈가 없습니다.</div>';
+  Array.prototype.forEach.call(box.querySelectorAll(".q"), function(el){
+    var i = +el.dataset.i;
+    var ta = el.querySelector("textarea"); ta.oninput = function(){ state.answers[i] = Object.assign(state.answers[i]||{}, {text:ta.value}); persist(); };
+    var sh = el.querySelector(".show"); if(sh) sh.onclick = function(){ if(!(ta.value||"").trim()){ alert("답을 먼저 적어 주세요."); return; } state.answers[i] = Object.assign(state.answers[i]||{}, {text:ta.value, shown:true}); persist(); renderQuiz(); };
+    var o = el.querySelector(".o"), x = el.querySelector(".x");
+    if(o) o.onclick = function(){ state.marks[i] = true; persist(); renderQuiz(); renderSign(); updateProg(); };
+    if(x) x.onclick = function(){ state.marks[i] = false; persist(); renderQuiz(); renderSign(); updateProg(); };
+  });
+  var marked = Q.filter(function(_,i){ return state.marks[i]!==undefined; }).length, correct = Q.filter(function(_,i){ return state.marks[i]===true; }).length;
+  $("#stQuiz").textContent = marked+"/"+Q.length; $("#stQuiz").className = "st"+(Q.length && marked===Q.length?" ok":"");
+  $("#score").textContent = Q.length && marked===Q.length ? (correct+" / "+Q.length+" 정답"+(correct>=Math.min(4,Q.length)?" · 🎁 포상 대상!":"")) : "";
+}
+
+// 5. 서명 + 제출
+var cv = $("#sig"), ctx = cv.getContext("2d"), drawing=false, hasSig=false;
+function sizeCanvas(){ var r = cv.getBoundingClientRect(); var ratio = window.devicePixelRatio||1; var img = cv.toDataURL(); cv.width = r.width*ratio; cv.height = 170*ratio; ctx.scale(ratio, ratio); ctx.lineWidth = 2.6; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#1F2A26"; if(hasSig){ var im=new Image(); im.onload=function(){ ctx.drawImage(im,0,0,r.width,170); }; im.src=img; } }
+sizeCanvas(); window.addEventListener("resize", sizeCanvas);
+function pos(e){ var r = cv.getBoundingClientRect(); var t = e.touches ? e.touches[0] : e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+function start(e){ e.preventDefault(); drawing=true; var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+function move(e){ if(!drawing) return; e.preventDefault(); var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); hasSig=true; renderSign(); }
+function end(){ drawing=false; }
+cv.addEventListener("touchstart", start, {passive:false}); cv.addEventListener("touchmove", move, {passive:false}); cv.addEventListener("touchend", end);
+cv.addEventListener("mousedown", start); cv.addEventListener("mousemove", move); window.addEventListener("mouseup", end);
+$("#sigClear").onclick = function(){ ctx.clearRect(0,0,cv.width,cv.height); hasSig=false; renderSign(); };
+function allDone(){ var m=month(); if(!m) return false; var vs=(m.videos||[]), Q=(m.quiz||[]); var vOk = vs.every(function(v){ return state.watched[v.id]; }); var qOk = Q.every(function(_,i){ return state.marks[i]!==undefined; }); return state.read && vOk && qOk; }
+function renderSign(){ var ok = allDone(); $("#btnDone").disabled = !(ok && hasSig) || state.done; $("#stSign").textContent = state.done ? "제출됨" : (ok ? (hasSig?"제출 가능":"서명 필요") : "대기"); $("#stSign").className = "st"+(state.done||ok?" ok":""); $("#doneHint").textContent = state.done ? "이미 제출했습니다. 수고하셨습니다!" : (ok ? "서명 후 「수강 완료」를 누르세요." : "2·3·4단계를 모두 마치고 서명하면 제출할 수 있습니다."); }
+function sigPng(){ var c = document.createElement("canvas"); c.width=400; c.height=160; var x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,400,160); x.drawImage(cv,0,0,400,160); return c.toDataURL("image/png"); }
+function payload(){ var m = month(); var Q=(m.quiz||[]); var correct = Q.filter(function(_,i){ return state.marks[i]===true; }).length;
+  return { year:DATA.year, month:state.month+1, name:state.name, completedAt:new Date().toISOString(), topic:m.topic||"", videos:(m.videos||[]).filter(function(v){ return state.watched[v.id]; }).map(function(v){ return v.title; }), quizScore:correct, quizTotal:Q.length, answers:Q.map(function(x,i){ return {q:x.q, a:(state.answers[i]||{}).text||"", ok:state.marks[i]===true}; }), sig:sigPng(), device:navigator.userAgent.slice(0,80) }; }
+var lastPayload = null;
+$("#btnDone").onclick = function(){ if(!allDone() || !hasSig) return; lastPayload = payload(); submit(lastPayload); };
+function submit(p){
+  $("#btnDone").disabled = true; $("#btnDone").textContent = "전송 중…";
+  var finish = function(ok){ state.done = true; state.doneAt = p.completedAt; persist(); $("#cardDone").classList.remove("hidden"); $("#cardDone").scrollIntoView({behavior:"smooth"});
+    var t = new Date(p.completedAt); $("#doneMsg").textContent = p.name+" · "+DATA.year+"년 "+p.month+"월 교육 · "+t.getMonth()+1+"월 "+t.getDate()+"일 "+String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+" 완료 · 퀴즈 "+p.quizScore+"/"+p.quizTotal + (ok ? " · 사무실로 전송되었습니다" : "");
+    $("#doneMsg").textContent = $("#doneMsg").textContent.replace(/(\d+)월 (\d+)일/, function(_,a,b){ return (t.getMonth()+1)+"월 "+b+"일"; });
+    if(!ok){ $("#fallback").classList.remove("hidden"); $("#code").textContent = "EDU1:" + btoa(unescape(encodeURIComponent(JSON.stringify(p)))); }
+    renderSign(); updateProg(); };
+  if(!DATA.scriptUrl){ finish(false); return; }
+  var body = JSON.stringify(p);
+  fetch(DATA.scriptUrl, { method:"POST", body:body, headers:{"Content-Type":"text/plain;charset=utf-8"} })
+    .then(function(r){ return r.text(); }).then(function(t){ var ok=false; try{ ok = JSON.parse(t).ok===true; }catch(e){} if(ok) finish(true); else throw new Error("bad"); })
+    .catch(function(){
+      // 응답을 읽을 수 없는 환경(CORS)에서는 no-cors로 한 번 더 보냄 — 서버에는 기록되지만 확인은 못 하므로 코드도 함께 표시
+      fetch(DATA.scriptUrl, { method:"POST", mode:"no-cors", body:body, headers:{"Content-Type":"text/plain;charset=utf-8"} })
+        .then(function(){ finish(true); $("#doneMsg").textContent += " (전송 확인은 사무실 동기화로)"; })
+        .catch(function(){ finish(false); });
+    });
+}
+$("#btnCopy").onclick = function(){ var t = $("#code").textContent; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ alert("복사했습니다. 카톡으로 붙여넣어 보내 주세요."); }); else { var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); alert("복사했습니다."); } };
+$("#btnRetry").onclick = function(){ if(lastPayload) submit(lastPayload); };
+function updateProg(){ var m=month(); if(!state.name||!m){ $("#progB").style.width="0%"; $("#progP").textContent="0%"; return; } var vs=(m.videos||[]), Q=(m.quiz||[]); var total = 1+vs.length+Q.length+1, done = (state.read?1:0)+vs.filter(function(v){return state.watched[v.id];}).length+Q.filter(function(_,i){return state.marks[i]!==undefined;}).length+(state.done?1:0); var p=Math.round(done/total*100); $("#progB").style.width=p+"%"; $("#progP").textContent=p+"%"; }
+if(!state.name && DATA.defaultMonth!=null) state.month = DATA.defaultMonth;
+(function(){ var el=$("#srvTag"); if(DATA.scriptUrl){ el.textContent="● 서버 연결 설정됨 (완료 시 자동 전송)"; el.style.color="#9FE1BE"; } else { el.textContent="⚠ 서버 주소 없음 — 완료 시 코드로 제출 (플랫폼 공통 설정에 주소 입력 후 다시 만들어 올리세요)"; el.style.color="#FFB347"; } })();
+renderWho(); renderCourse();
+})();
+</script>
+</body>
+</html>
