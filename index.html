@@ -86,7 +86,9 @@
     </div>
     <div class="card hidden" id="cardDone">
       <div class="done"><div class="big">🎉</div><h3 id="doneTitle">수강 완료!</h3><p id="doneMsg"></p></div>
-      <div id="fallback" class="hidden"><div class="hint">서버로 보내지 못했습니다. 아래 수강 확인 코드를 복사해 사무실(품질관리팀)에 카톡으로 보내 주세요.</div><div class="code" id="code"></div><div class="row"><button class="btn" id="btnCopy">코드 복사</button><button class="btn primary" id="btnRetry">다시 전송</button></div></div>
+      <div id="fallback" class="hidden"><div class="hint" id="fbHint">서버로 보내지 못했습니다. 아래 수강 확인 코드를 복사해 사무실(품질관리팀)에 카톡으로 보내 주세요.</div><div class="code" id="code"></div><div class="row"><button class="btn" id="btnCopy">코드 복사</button><button class="btn primary" id="btnRetry">서버로 다시 전송</button></div></div>
+      <div class="row" style="margin-top:12px;"><button class="btn" id="btnRedo">처음부터 다시 제출하기</button></div>
+      <div class="hint">사무실에서 "기록이 없다"고 하면 「서버로 다시 전송」을 누르거나, 코드를 카톡으로 보내 주세요. 처음부터 다시 하려면 「처음부터 다시 제출하기」.</div>
     </div>
   </div>
 </div>
@@ -124,7 +126,10 @@ function renderCourse(){
   $("#stContent").textContent = state.read ? "완료" : "읽기"; $("#stContent").className = "st"+(state.read?" ok":"");
   $("#btnRead").disabled = state.read; $("#btnRead").textContent = state.read ? "✔ 내용 확인 완료" : "✔ 내용을 모두 읽었습니다";
   renderVideos(); renderQuiz(); renderSign(); updateProg();
-  if(state.done){ $("#cardDone").classList.remove("hidden"); }
+  if(state.done){ $("#cardDone").classList.remove("hidden");
+    if(state.payload){ var p=state.payload, t=new Date(p.completedAt); $("#doneMsg").textContent = p.name+" · "+DATA.year+"년 "+p.month+"월 교육 · "+(t.getMonth()+1)+"월 "+t.getDate()+"일 "+String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+" 완료 · 퀴즈 "+p.quizScore+"/"+p.quizTotal+(state.sent?" · 사무실로 전송되었습니다":" · 전송 확인 안 됨"); showFallback(p, !state.sent); }
+    else { $("#doneMsg").textContent = "이전에 제출한 기록이 이 휴대폰에 남아 있지 않습니다. 서버 전송이 안 됐을 수 있으니 「처음부터 다시 제출하기」로 다시 진행해 주세요."; }
+  }
 }
 $("#btnRead").onclick = function(){ state.read = true; persist(); renderCourse(); };
 
@@ -200,10 +205,10 @@ var lastPayload = null;
 $("#btnDone").onclick = function(){ if(!allDone() || !hasSig) return; lastPayload = payload(); submit(lastPayload); };
 function submit(p){
   $("#btnDone").disabled = true; $("#btnDone").textContent = "전송 중…";
-  var finish = function(ok){ state.done = true; state.doneAt = p.completedAt; persist(); $("#cardDone").classList.remove("hidden"); $("#cardDone").scrollIntoView({behavior:"smooth"});
+  var finish = function(ok){ state.done = true; state.doneAt = p.completedAt; state.sent = !!ok; state.payload = p; persist(); $("#cardDone").classList.remove("hidden"); $("#cardDone").scrollIntoView({behavior:"smooth"});
     var t = new Date(p.completedAt); $("#doneMsg").textContent = p.name+" · "+DATA.year+"년 "+p.month+"월 교육 · "+t.getMonth()+1+"월 "+t.getDate()+"일 "+String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+" 완료 · 퀴즈 "+p.quizScore+"/"+p.quizTotal + (ok ? " · 사무실로 전송되었습니다" : "");
     $("#doneMsg").textContent = $("#doneMsg").textContent.replace(/(\d+)월 (\d+)일/, function(_,a,b){ return (t.getMonth()+1)+"월 "+b+"일"; });
-    if(!ok){ $("#fallback").classList.remove("hidden"); $("#code").textContent = "EDU1:" + btoa(unescape(encodeURIComponent(JSON.stringify(p)))); }
+    showFallback(p, !ok);
     renderSign(); updateProg(); };
   if(!DATA.scriptUrl){ finish(false); return; }
   var body = JSON.stringify(p);
@@ -216,8 +221,11 @@ function submit(p){
         .catch(function(){ finish(false); });
     });
 }
+function codeOf(p){ return "EDU1:" + btoa(unescape(encodeURIComponent(JSON.stringify(p)))); }
+function showFallback(p, failed){ $("#fallback").classList.remove("hidden"); $("#code").textContent = codeOf(p); $("#fbHint").textContent = failed ? "서버로 보내지 못했습니다. 아래 수강 확인 코드를 복사해 사무실(품질관리팀)에 카톡으로 보내 주세요." : "전송되었습니다. 필요하면 아래 코드로도 사무실에 전달할 수 있습니다."; }
 $("#btnCopy").onclick = function(){ var t = $("#code").textContent; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ alert("복사했습니다. 카톡으로 붙여넣어 보내 주세요."); }); else { var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); alert("복사했습니다."); } };
-$("#btnRetry").onclick = function(){ if(lastPayload) submit(lastPayload); };
+$("#btnRetry").onclick = function(){ var p = lastPayload || state.payload; if(!p){ alert("보낼 기록이 없습니다. 「처음부터 다시 제출하기」로 진행해 주세요."); return; } $("#btnDone").disabled=false; submit(p); };
+$("#btnRedo").onclick = function(){ if(!confirm("이 달 수강을 처음부터 다시 진행할까요? (기존 제출 상태가 초기화됩니다)")) return; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; state.sent=false; state.payload=null; persist(); ctx.clearRect(0,0,cv.width,cv.height); hasSig=false; $("#cardDone").classList.add("hidden"); $("#btnDone").textContent="수강 완료 · 서명 제출"; renderCourse(); window.scrollTo({top:0,behavior:"smooth"}); };
 function updateProg(){ var m=month(); if(!state.name||!m){ $("#progB").style.width="0%"; $("#progP").textContent="0%"; return; } var vs=(m.videos||[]), Q=(m.quiz||[]); var total = 1+vs.length+Q.length+1, done = (state.read?1:0)+vs.filter(function(v){return state.watched[v.id];}).length+Q.filter(function(_,i){return state.marks[i]!==undefined;}).length+(state.done?1:0); var p=Math.round(done/total*100); $("#progB").style.width=p+"%"; $("#progP").textContent=p+"%"; }
 if(!state.name && DATA.defaultMonth!=null) state.month = DATA.defaultMonth;
 (function(){ var el=$("#srvTag"); if(DATA.scriptUrl){ el.textContent="● 서버 연결 설정됨 (완료 시 자동 전송)"; el.style.color="#9FE1BE"; } else { el.textContent="⚠ 서버 주소 없음 — 완료 시 코드로 제출 (플랫폼 공통 설정에 주소 입력 후 다시 만들어 올리세요)"; el.style.color="#FFB347"; } })();
