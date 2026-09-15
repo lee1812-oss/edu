@@ -28,12 +28,14 @@
   .vid{border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;margin-bottom:10px;}
   .vid .frame{position:relative;aspect-ratio:16/9;background:#000;} .vid .frame iframe,.vid .frame div{position:absolute;inset:0;width:100%;height:100%;border:0;}
   .vid .meta{display:flex;align-items:center;gap:8px;padding:10px 12px;} .vid .meta b{flex:1;font-size:14px;line-height:1.3;}
+  .rate{display:flex;gap:6px;padding:0 12px 10px;align-items:center;flex-wrap:wrap;} .rate span{font-size:12px;color:var(--soft);font-weight:700;} .rate button{font-family:inherit;font-size:12.5px;font-weight:800;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;color:var(--ink);} .rate button.on{background:var(--fresh);color:#fff;border-color:var(--fresh);}
   .pill{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;background:#EEF0EE;color:#7A8580;white-space:nowrap;}
   .pill.ok{background:#E9F4EE;color:var(--fresh);} .pill.play{background:#FFF0E0;color:var(--crust-deep);}
   .btn{font-family:inherit;font-weight:800;font-size:15px;padding:13px 16px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);width:100%;}
   .btn.primary{background:linear-gradient(150deg,var(--crust),var(--crust-deep));color:#fff;border-color:transparent;}
   .btn.green{background:var(--fresh);color:#fff;border-color:transparent;}
   .btn:disabled{opacity:.45;}
+  .btn.doneok:disabled{opacity:1;background:var(--fresh);color:#fff;border-color:transparent;}
   .q{border:1.5px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:#fff;}
   .q .qt{font-size:15px;font-weight:800;line-height:1.35;} .q .qh{font-size:12.5px;color:var(--soft);margin-top:4px;}
   .q textarea{width:100%;margin-top:8px;font-family:inherit;font-size:15px;border:1.5px solid var(--line);border-radius:10px;padding:10px;}
@@ -124,7 +126,7 @@ function renderCourse(){
   $("#topic").textContent = m.topic||""; $("#subtitle").textContent = m.subtitle||"";
   $("#items").innerHTML = (m.items||[]).map(function(it){ if(it.head!=null) return '<li class="it head"><span class="t">▍ '+esc(it.head)+'</span></li>'; return '<li class="it"><span class="n">'+(it.no||"")+'</span><span><span class="t">'+esc(it.title)+'</span>'+(it.desc?'<span class="d">'+esc(it.desc)+'</span>':'')+'</span></li>'; }).join("");
   $("#stContent").textContent = state.read ? "완료" : "읽기"; $("#stContent").className = "st"+(state.read?" ok":"");
-  $("#btnRead").disabled = state.read; $("#btnRead").textContent = state.read ? "✔ 내용 확인 완료" : "✔ 내용을 모두 읽었습니다";
+  $("#btnRead").disabled = state.read; $("#btnRead").textContent = state.read ? "✔ 내용 확인 완료" : "✔ 내용을 모두 읽었습니다"; $("#btnRead").classList.toggle("doneok", !!state.read);
   renderVideos(); renderQuiz(); renderSign(); updateProg();
   if(state.done){ $("#cardDone").classList.remove("hidden");
     if(state.payload){ var p=state.payload, t=new Date(p.completedAt); $("#doneMsg").textContent = p.name+" · "+DATA.year+"년 "+p.month+"월 교육 · "+(t.getMonth()+1)+"월 "+t.getDate()+"일 "+String(t.getHours()).padStart(2,"0")+":"+String(t.getMinutes()).padStart(2,"0")+" 완료 · 퀴즈 "+p.quizScore+"/"+p.quizTotal+(state.sent?" · 사무실로 전송되었습니다":" · 전송 확인 안 됨"); showFallback(p, !state.sent); }
@@ -140,7 +142,7 @@ window.onYouTubeIframeAPIReady = function(){ ytReady = true; mountPlayers(); };
 function renderVideos(){
   var m = month(); var vs = (m && m.videos)||[];
   var box = $("#videos");
-  box.innerHTML = vs.length ? vs.map(function(v,i){ var ok = !!state.watched[v.id]; return '<div class="vid" data-i="'+i+'"><div class="frame"><div id="yt_'+i+'"></div></div><div class="meta"><b>'+esc(v.title)+(v.dur?' <span style="color:#7A8580;font-weight:600;font-size:12px;">'+fmt(v.dur)+'</span>':'')+'</b><span class="pill '+(ok?"ok":"")+'" id="pill_'+i+'">'+(ok?"✔ 시청 완료":"미시청")+'</span></div>'+(ok?'':'<div class="row" style="padding:0 12px 12px;margin:0;"><button class="btn manual hidden" id="man_'+i+'">시청 완료</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 교육 영상이 없습니다.</div>';
+  box.innerHTML = vs.length ? vs.map(function(v,i){ var ok = !!state.watched[v.id]; return '<div class="vid" data-i="'+i+'"><div class="frame"><div id="yt_'+i+'"></div></div><div class="meta"><b>'+esc(v.title)+(v.dur?' <span style="color:#7A8580;font-weight:600;font-size:12px;">'+fmt(v.dur)+'</span>':'')+'</b><span class="pill '+(ok?"ok":"")+'" id="pill_'+i+'">'+(ok?"✔ 시청 완료":"미시청")+'</span></div><div class="rate" id="rate_'+i+'"><span>배속</span>'+[1,1.25,1.5,2].map(function(r){ return '<button data-r="'+r+'" class="'+(r===1?"on":"")+'">'+r+'x</button>'; }).join("")+'</div>'+(ok?'':'<div class="row" style="padding:0 12px 12px;margin:0;"><button class="btn manual hidden" id="man_'+i+'">시청 완료</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 교육 영상이 없습니다.</div>';
   var n = vs.filter(function(v){ return state.watched[v.id]; }).length;
   $("#stVideos").textContent = n+"/"+vs.length; $("#stVideos").className = "st"+(vs.length && n===vs.length?" ok":"");
   mountPlayers();
@@ -152,10 +154,24 @@ function mountPlayers(){
     var host = document.getElementById("yt_"+i); if(!host) return;
     if(ytReady && window.YT && YT.Player && !host.dataset.mounted){
       host.dataset.mounted = "1";
+      var seen = {}; var timer = null; var lastT = -1;
+      var cover = function(pl){ var d = pl.getDuration()||v.dur||0; if(!d) return 0; var n=0; for(var k in seen) n++; return Math.min(1, n/Math.floor(d)); };
+      var tick = function(){ var pl = players[i]; if(!pl || !pl.getCurrentTime) return; var ct = pl.getCurrentTime(); var d = pl.getDuration()||v.dur||0;
+        if(lastT>=0 && ct-lastT>0 && ct-lastT<=2.6){ for(var s=Math.floor(lastT); s<=Math.floor(ct); s++) seen[s]=1; }   // 순서대로 재생한 구간만 인정(3초 이상 점프는 제외)
+        lastT = ct;
+        var c = cover(pl); var p=document.getElementById("pill_"+i);
+        if(p && !state.watched[v.id]){ p.textContent="▶ 시청 중 "+Math.round(c*100)+"%"; p.className="pill play"; }
+        if(!state.watched[v.id] && d && c>=0.95){ markWatched(v.id); } };
       players[i] = new YT.Player("yt_"+i, { videoId:v.id, playerVars:{rel:0, playsinline:1, modestbranding:1}, events:{
-        onStateChange:function(e){ if(e.data===YT.PlayerState.ENDED){ markWatched(v.id); } else if(e.data===YT.PlayerState.PLAYING){ var p=document.getElementById("pill_"+i); if(p && !state.watched[v.id]){ p.textContent="▶ 시청 중"; p.className="pill play"; } armManual(i, v); } } } });
+        onReady:function(e){ var rb=document.getElementById("rate_"+i); if(rb){ Array.prototype.forEach.call(rb.querySelectorAll("button"), function(b){ b.onclick=function(){ try{ e.target.setPlaybackRate(+b.dataset.r); }catch(x){} Array.prototype.forEach.call(rb.querySelectorAll("button"), function(x){ x.classList.toggle("on", x===b); }); }; }); } },
+        onStateChange:function(e){
+          if(e.data===YT.PlayerState.PLAYING){ lastT = e.target.getCurrentTime(); if(timer) clearInterval(timer); timer = setInterval(tick, 250); }
+          else { if(timer){ clearInterval(timer); timer=null; } tick(); }
+          if(e.data===YT.PlayerState.ENDED){ var c = cover(e.target); if(c>=0.9) markWatched(v.id); else { var p=document.getElementById("pill_"+i); if(p){ p.textContent="⚠ 건너뛴 구간 있음 ("+Math.round(c*100)+"%) — 빠진 부분을 다시 보세요"; p.className="pill"; } } }
+        } } });
     } else if(ytFailed && !host.dataset.mounted){
       host.dataset.mounted = "1";
+      var rb0=document.getElementById("rate_"+i); if(rb0) rb0.style.display="none";
       host.innerHTML = '<a href="https://www.youtube.com/watch?v='+v.id+'" target="_blank" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none;font-weight:800;background:#123A33;">▶ 유튜브 앱에서 보기</a>';
       armManual(i, v, 0);
     }
@@ -226,7 +242,7 @@ function showFallback(p, failed){ $("#fallback").classList.remove("hidden"); $("
 $("#btnCopy").onclick = function(){ var t = $("#code").textContent; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ alert("복사했습니다. 카톡으로 붙여넣어 보내 주세요."); }); else { var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); alert("복사했습니다."); } };
 $("#btnRetry").onclick = function(){ var p = lastPayload || state.payload; if(!p){ alert("보낼 기록이 없습니다. 「처음부터 다시 제출하기」로 진행해 주세요."); return; } $("#btnDone").disabled=false; submit(p); };
 $("#btnRedo").onclick = function(){ if(!confirm("이 달 수강을 처음부터 다시 진행할까요? (기존 제출 상태가 초기화됩니다)")) return; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; state.sent=false; state.payload=null; persist(); ctx.clearRect(0,0,cv.width,cv.height); hasSig=false; $("#cardDone").classList.add("hidden"); $("#btnDone").textContent="수강 완료 · 서명 제출"; renderCourse(); window.scrollTo({top:0,behavior:"smooth"}); };
-function updateProg(){ var m=month(); if(!state.name||!m){ $("#progB").style.width="0%"; $("#progP").textContent="0%"; return; } var vs=(m.videos||[]), Q=(m.quiz||[]); var total = 1+vs.length+Q.length+1, done = (state.read?1:0)+vs.filter(function(v){return state.watched[v.id];}).length+Q.filter(function(_,i){return state.marks[i]!==undefined;}).length+(state.done?1:0); var p=Math.round(done/total*100); $("#progB").style.width=p+"%"; $("#progP").textContent=p+"%"; }
+function updateProg(){ var m=month(); if(!state.name||!m){ $("#progB").style.width="0%"; $("#progP").textContent="0%"; return; } var vs=(m.videos||[]), Q=(m.quiz||[]); var total = 1+vs.length+Q.length, done = (state.read?1:0)+vs.filter(function(v){return state.watched[v.id];}).length+Q.filter(function(_,i){return state.marks[i]!==undefined;}).length; var p=Math.round(done/total*100); $("#progB").style.width=p+"%"; $("#progP").textContent=p+"%"; $("#progT").textContent = state.done ? "제출 완료 🎉" : (p>=100 ? "학습 완료 · 서명 후 제출" : "진행률"); }
 if(!state.name && DATA.defaultMonth!=null) state.month = DATA.defaultMonth;
 (function(){ var el=$("#srvTag"); if(DATA.scriptUrl){ el.textContent="● 서버 연결 설정됨 (완료 시 자동 전송)"; el.style.color="#9FE1BE"; } else { el.textContent="⚠ 서버 주소 없음 — 완료 시 코드로 제출 (플랫폼 공통 설정에 주소 입력 후 다시 만들어 올리세요)"; el.style.color="#FFB347"; } })();
 renderWho(); renderCourse();
