@@ -184,8 +184,10 @@ try{ var saved = JSON.parse(localStorage.getItem(LS)||"null"); if(saved && saved
 function persist(){ state.year = DATA.year; try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
 function month(){ return DATA.months[state.month] || null; }
 var LAST_DAY = 25;
-function windowInfo(mi){ var now = new Date(); var open = (now.getFullYear()===DATA.year && now.getMonth()===mi && now.getDate()<=LAST_DAY);
-  var reason = ""; if(!open){ if(now.getFullYear()!==DATA.year || now.getMonth()<mi) reason = (mi+1)+"월 1일부터 수강할 수 있습니다 (열람만 가능)"; else reason = (mi+1)+"월 수강 기간(1~"+LAST_DAY+"일)이 지났습니다 (열람만 가능)"; }
+var LAST_DAY_BY_MONTH = {9:29}; // 월별 마감일 예외 (월: 일) — 9월은 29일까지
+function lastDay(mi){ return LAST_DAY_BY_MONTH[mi+1] || LAST_DAY; }
+function windowInfo(mi){ var now = new Date(); var open = (now.getFullYear()===DATA.year && now.getMonth()===mi && now.getDate()<=lastDay(mi));
+  var reason = ""; if(!open){ if(now.getFullYear()!==DATA.year || now.getMonth()<mi) reason = (mi+1)+"월 1일부터 수강할 수 있습니다 (열람만 가능)"; else reason = (mi+1)+"월 수강 기간(1~"+lastDay(mi)+"일)이 지났습니다 (열람만 가능)"; }
   return {open:open, reason:reason}; }
 
 // 1. 이름/월
@@ -195,7 +197,7 @@ function renderWho(){
   var ms = $("#months"); ms.innerHTML = DATA.months.map(function(m,i){ var has = m && (m.topic||"").trim(); return '<button '+(has?"":"disabled")+' class="'+(state.month===i?"on":"")+'">'+(i+1)+'월</button>'; }).join("");
   Array.prototype.forEach.call(ms.querySelectorAll("button"), function(b,i){ b.onclick = function(){ if(state.month!==i){ state.month=i; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; } persist(); renderWho(); renderCourse(); }; });
   $("#stWho").textContent = state.name ? state.name+" · "+(state.month+1)+"월" : "선택"; $("#stWho").className = "st"+(state.name?" ok":"");
-  var wi = windowInfo(state.month); var wb = $("#winBar"); wb.textContent = wi.open ? "● "+(state.month+1)+"월 수강 기간: 1일 ~ "+LAST_DAY+"일 (지금 수강 가능)" : "⚠ "+wi.reason; wb.style.color = wi.open ? "var(--fresh)" : "#C0392B";
+  var wi = windowInfo(state.month); var wb = $("#winBar"); wb.textContent = wi.open ? "● "+(state.month+1)+"월 수강 기간: 1일 ~ "+lastDay(state.month)+"일 (지금 수강 가능)" : "⚠ "+wi.reason; wb.style.color = wi.open ? "var(--fresh)" : "#C0392B";
   $("#topSub").textContent = state.name ? DATA.year+"년 "+(state.month+1)+"월 교육 · "+state.name : "이름과 교육 월을 고르고 순서대로 진행하세요";
 }
 
