@@ -178,7 +178,7 @@
 var DATA = JSON.parse(document.getElementById("eduData").textContent);
 var $ = function(s){ return document.querySelector(s); };
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-var state = { name:"", month:0, read:false, watched:{}, marks:{}, answers:{}, sigData:"", done:false };
+var state = { name:"", month:0, read:false, watched:{}, vp:{}, marks:{}, answers:{}, sigData:"", done:false };
 var LS = "bggd_mobile_edu_v1";
 try{ var saved = JSON.parse(localStorage.getItem(LS)||"null"); if(saved && saved.year===DATA.year) state = Object.assign(state, saved); }catch(e){}
 function persist(){ state.year = DATA.year; try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
@@ -196,7 +196,7 @@ function renderWho(){
   var nm = $("#names"); nm.innerHTML = DATA.roster.map(function(n){ return '<button class="'+(state.name===n?"on":"")+'">'+esc(n)+'</button>'; }).join("");
   Array.prototype.forEach.call(nm.querySelectorAll("button"), function(b){ b.onclick = function(){ state.name = b.textContent; persist(); renderWho(); renderCourse(); }; });
   var ms = $("#months"); ms.innerHTML = DATA.months.map(function(m,i){ var has = m && (m.topic||"").trim(); return '<button '+(has?"":"disabled")+' class="'+(state.month===i?"on":"")+'">'+(i+1)+'월</button>'; }).join("");
-  Array.prototype.forEach.call(ms.querySelectorAll("button"), function(b,i){ b.onclick = function(){ if(state.month!==i){ state.month=i; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; } persist(); renderWho(); renderCourse(); }; });
+  Array.prototype.forEach.call(ms.querySelectorAll("button"), function(b,i){ b.onclick = function(){ if(state.month!==i){ state.month=i; state.read=false; state.watched={}; state.vp={}; state.marks={}; state.answers={}; state.done=false; } persist(); renderWho(); renderCourse(); }; });
   $("#stWho").textContent = state.name ? state.name+" · "+(state.month+1)+"월" : "선택"; $("#stWho").className = "st"+(state.name?" ok":"");
   var wi = windowInfo(state.month); var wb = $("#winBar"); wb.textContent = wi.open ? "● "+(state.month+1)+"월 수강 기간: 1일 ~ "+lastDayOf(state.month)+"일 (지금 수강 가능)" : "⚠ "+wi.reason; wb.style.color = wi.open ? "var(--fresh)" : "#C0392B";
   $("#topSub").textContent = state.name ? DATA.year+"년 "+(state.month+1)+"월 교육 · "+state.name : "이름과 교육 월을 고르고 순서대로 진행하세요";
@@ -219,52 +219,79 @@ function renderCourse(){
 }
 $("#btnRead").onclick = function(){ state.read = true; persist(); renderCourse(); };
 
-// 3. 영상 (YouTube IFrame API)
+// 3. 영상 (YouTube IFrame API) — 필요한 구간만 재생 · 이어보기 · 한국어 자막
+/* 영상별 재생 구간: 「유튜브 ID」: {s:"시작 분:초", e:"끝 분:초"} — 비워 두면 영상 전체를 봅니다.
+   월별 자료에 구간(v.s, v.e)이 들어 있으면 그것이 먼저 쓰입니다.
+   예) var VIDEO_SEG = { "9_Bs_2Dtg9o": {s:"3:10", e:"12:40"} }; */
+var VIDEO_SEG = {};
 var players = {}, ytReady = false, ytFailed = false;
+if(!state.vp || typeof state.vp!=="object") state.vp = {};   // 영상별 시청 기록 {id:{r:[[시작초,끝초],…], t:마지막 위치}}
 window.onYouTubeIframeAPIReady = function(){ ytReady = true; mountPlayers(); };
 (function loadYT(){ var s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; s.onerror = function(){ ytFailed = true; renderVideos(); }; document.head.appendChild(s); setTimeout(function(){ if(!ytReady){ ytFailed = true; renderVideos(); } }, 8000); })();
+function toSec(x){ if(x==null || x==="") return 0; if(typeof x==="number") return Math.max(0, Math.floor(x)); var p = String(x).trim().split(":").map(Number); if(!p.length || p.some(isNaN)) return 0; return p.length>=3 ? p[0]*3600+p[1]*60+p[2] : (p.length===2 ? p[0]*60+p[1] : p[0]); }
+function segOf(v){ var g = VIDEO_SEG[v.id] || {}; var s = toSec(v.s!=null && v.s!=="" ? v.s : g.s), e = toSec(v.e!=null && v.e!=="" ? v.e : g.e); if(e && e<=s) e = 0; return {s:s, e:e, on:!!(s||e)}; }
+function segEnd(v, d){ var g = segOf(v); return g.e || d || v.dur || 0; }
+function segLen(v, d){ var g = segOf(v), end = segEnd(v, d); return end ? Math.max(0, end-g.s) : 0; }
+function vpOf(id){ var o = state.vp[id]; if(!o || typeof o!=="object"){ o = state.vp[id] = {r:[], t:0}; } if(!Array.isArray(o.r)) o.r = []; return o; }
+function addRange(o, a, b){ if(b<a) return; o.r.push([a,b]); o.r.sort(function(x,y){ return x[0]-y[0]; }); var out = []; o.r.forEach(function(x){ var l = out[out.length-1]; if(l && x[0]<=l[1]+1) l[1] = Math.max(l[1], x[1]); else out.push([x[0], x[1]]); }); o.r = out; }
+function coverOf(v, d){ var g = segOf(v), end = segEnd(v, d), len = segLen(v, d); if(!len) return 0; var o = vpOf(v.id), n = 0;
+  o.r.forEach(function(x){ var a = Math.max(x[0], g.s), b = Math.min(x[1], end-1); if(b>=a) n += b-a+1; }); return Math.min(1, n/len); }
+function fmt(sec){ sec = Math.max(0, Math.round(sec)); var m=Math.floor(sec/60), s=sec%60; return m+":"+(s<10?"0":"")+s; }
+function lenTxt(sec){ var m = Math.round(sec/60); return m>=1 ? m+"분" : sec+"초"; }
+function resumeAt(v){ var g = segOf(v), end = segEnd(v, 0), o = vpOf(v.id); var t = o.t||0; if(state.watched[v.id] || t < g.s+5 || (end && t > end-5)) return g.s; return Math.floor(t); }
 function renderVideos(){
   var m = month(); var vs = (m && m.videos)||[];
   var box = $("#videos");
-  box.innerHTML = vs.length ? vs.map(function(v,i){ var ok = !!state.watched[v.id]; return '<div class="vid" data-i="'+i+'"><div class="frame"><div id="yt_'+i+'"></div></div><div class="meta"><b>'+esc(v.title)+(v.dur?' <span style="color:#7A8580;font-weight:600;font-size:12px;">'+fmt(v.dur)+'</span>':'')+'</b><span class="pill '+(ok?"ok":"")+'" id="pill_'+i+'">'+(ok?"✔ 시청 완료":"미시청")+'</span></div><div class="rate" id="rate_'+i+'"><span>배속</span>'+[1,1.25,1.5,2].map(function(r){ return '<button data-r="'+r+'" class="'+(r===1?"on":"")+'">'+r+'x</button>'; }).join("")+'</div>'+(ok?'':'<div class="row" style="padding:0 12px 12px;margin:0;"><button class="btn manual hidden" id="man_'+i+'">시청 완료</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 교육 영상이 없습니다.</div>';
+  box.innerHTML = vs.length ? vs.map(function(v,i){ var ok = !!state.watched[v.id]; var g = segOf(v); var len = segLen(v, 0);
+    var tm = g.on ? '<span style="color:#7A8580;font-weight:600;font-size:12px;">구간 '+fmt(g.s)+' ~ '+(g.e?fmt(g.e):'끝')+(len?' · '+lenTxt(len):'')+'</span>'
+                  : (v.dur ? '<span style="color:#7A8580;font-weight:600;font-size:12px;">'+fmt(v.dur)+'</span>' : '');
+    var c = coverOf(v, 0), rs = resumeAt(v);
+    var pill = ok ? "✔ 시청 완료" : (c>0 ? "▶ 시청 "+Math.round(c*100)+"%" : "미시청");
+    var note = (!ok && rs > g.s) ? '<div style="padding:0 12px 8px;font-size:12.5px;color:#B86A1E;font-weight:700;">↻ 지난번에 본 곳('+fmt(rs)+')부터 이어서 재생합니다. 본 부분은 다시 안 봐도 됩니다.</div>'
+             : (g.on && !ok ? '<div style="padding:0 12px 8px;font-size:12.5px;color:#7A8580;font-weight:700;">이번 교육에 필요한 부분만 재생됩니다. 끝나면 자동으로 멈춥니다.</div>' : '');
+    return '<div class="vid" data-i="'+i+'"><div class="frame"><div id="yt_'+i+'"></div></div><div class="meta"><b>'+esc(v.title)+(tm?' '+tm:'')+'</b><span class="pill '+(ok?"ok":(c>0?"play":""))+'" id="pill_'+i+'">'+pill+'</span></div>'+note+'<div class="rate" id="rate_'+i+'"><span>배속</span>'+[1,1.25,1.5,2].map(function(r){ return '<button data-r="'+r+'" class="'+(r===1?"on":"")+'">'+r+'x</button>'; }).join("")+'</div>'+(ok?'':'<div class="row" style="padding:0 12px 12px;margin:0;"><button class="btn manual hidden" id="man_'+i+'">시청 완료</button></div>')+'</div>'; }).join("") : '<div class="hint">이 달에는 교육 영상이 없습니다.</div>';
   var n = vs.filter(function(v){ return state.watched[v.id]; }).length;
   $("#stVideos").textContent = (m && m.videoOptional) ? (n+"/"+vs.length+" · 선택") : (n+"/"+vs.length); $("#stVideos").className = "st"+((m && m.videoOptional) || (vs.length && n===vs.length)?" ok":"");
-  var vh=$("#vidHint"); if(vh) vh.textContent = (m && m.videoOptional) ? "이 달은 이미 집합교육을 받았으므로 영상 시청은 선택입니다. 복습으로 보셔도 좋습니다." : "영상을 끝까지 보면 자동으로 ✔ 처리됩니다. 유튜브가 열리지 않는 경우 일정 시간 후 「시청 완료」 버튼이 나타납니다.";
+  var vh=$("#vidHint"); if(vh) vh.textContent = (m && m.videoOptional) ? "이 달은 이미 집합교육을 받았으므로 영상 시청은 선택입니다. 복습으로 보셔도 좋습니다." : "끝까지 보면 자동으로 ✔ 처리됩니다. 쉬는 시간에 나눠 보셔도 본 곳이 저장되어 다음에 이어서 재생됩니다. 한국어 자막이 자동으로 켜집니다(영상에 자막이 있는 경우). 유튜브가 열리지 않으면 잠시 뒤 「시청 완료」 버튼이 나타납니다.";
   mountPlayers();
 }
-function fmt(sec){ var m=Math.floor(sec/60), s=sec%60; return m+":"+(s<10?"0":"")+s; }
 function mountPlayers(){
   var m = month(); var vs = (m && m.videos)||[];
   vs.forEach(function(v,i){
     var host = document.getElementById("yt_"+i); if(!host) return;
     if(ytReady && window.YT && YT.Player && !host.dataset.mounted){
       host.dataset.mounted = "1";
-      var seen = {}; var timer = null; var lastT = -1;
-      var cover = function(pl){ var d = pl.getDuration()||v.dur||0; if(!d) return 0; var n=0; for(var k in seen) n++; return Math.min(1, n/Math.floor(d)); };
-      var tick = function(){ var pl = players[i]; if(!pl || !pl.getCurrentTime) return; var ct = pl.getCurrentTime(); var d = pl.getDuration()||v.dur||0;
-        if(lastT>=0 && ct-lastT>0 && ct-lastT<=2.6){ for(var s=Math.floor(lastT); s<=Math.floor(ct); s++) seen[s]=1; }   // 순서대로 재생한 구간만 인정(3초 이상 점프는 제외)
-        lastT = ct;
-        var c = cover(pl); var p=document.getElementById("pill_"+i);
+      var timer = null; var lastT = -1; var lastSave = 0; var g = segOf(v);
+      var save = function(force){ var now = Date.now(); if(force || now-lastSave > 4000){ lastSave = now; persist(); } };
+      var tick = function(){ var pl = players[i]; if(!pl || !pl.getCurrentTime) return; var ct = pl.getCurrentTime(); var d = pl.getDuration()||v.dur||0; var o = vpOf(v.id);
+        if(lastT>=0 && ct-lastT>0 && ct-lastT<=2.6){ addRange(o, Math.floor(lastT), Math.floor(ct)); }   // 순서대로 재생한 구간만 인정(3초 이상 점프는 제외)
+        lastT = ct; o.t = Math.floor(ct);
+        var c = coverOf(v, d); var p=document.getElementById("pill_"+i);
         if(p && !state.watched[v.id]){ p.textContent="▶ 시청 중 "+Math.round(c*100)+"%"; p.className="pill play"; }
+        save(false);
         if(!state.watched[v.id] && d && c>=0.95){ markWatched(v.id); } };
-      players[i] = new YT.Player("yt_"+i, { videoId:v.id, playerVars:{rel:0, playsinline:1, modestbranding:1}, events:{
-        onReady:function(e){ var rb=document.getElementById("rate_"+i); if(rb){ Array.prototype.forEach.call(rb.querySelectorAll("button"), function(b){ b.onclick=function(){ try{ e.target.setPlaybackRate(+b.dataset.r); }catch(x){} Array.prototype.forEach.call(rb.querySelectorAll("button"), function(x){ x.classList.toggle("on", x===b); }); }; }); } },
+      var pv = {rel:0, playsinline:1, modestbranding:1, cc_load_policy:1, cc_lang_pref:"ko", hl:"ko", start:resumeAt(v)};
+      if(g.e) pv.end = g.e;
+      players[i] = new YT.Player("yt_"+i, { videoId:v.id, playerVars:pv, events:{
+        onReady:function(e){ try{ e.target.setOption && e.target.setOption("captions","track",{languageCode:"ko"}); }catch(x){}
+          var rb=document.getElementById("rate_"+i); if(rb){ Array.prototype.forEach.call(rb.querySelectorAll("button"), function(b){ b.onclick=function(){ try{ e.target.setPlaybackRate(+b.dataset.r); }catch(x){} Array.prototype.forEach.call(rb.querySelectorAll("button"), function(x){ x.classList.toggle("on", x===b); }); }; }); } },
         onStateChange:function(e){
           if(e.data===YT.PlayerState.PLAYING){ lastT = e.target.getCurrentTime(); if(timer) clearInterval(timer); timer = setInterval(tick, 250); }
-          else { if(timer){ clearInterval(timer); timer=null; } tick(); }
-          if(e.data===YT.PlayerState.ENDED){ var c = cover(e.target); if(c>=0.9) markWatched(v.id); else { var p=document.getElementById("pill_"+i); if(p){ p.textContent="⚠ 건너뛴 구간 있음 ("+Math.round(c*100)+"%) — 빠진 부분을 다시 보세요"; p.className="pill"; } } }
+          else { if(timer){ clearInterval(timer); timer=null; } tick(); save(true); }
+          if(e.data===YT.PlayerState.ENDED){ var c = coverOf(v, e.target.getDuration()||v.dur||0); if(c>=0.9) markWatched(v.id); else { var p=document.getElementById("pill_"+i); if(p){ p.textContent="⚠ 건너뛴 구간 있음 ("+Math.round(c*100)+"%) — 빠진 부분을 다시 보세요"; p.className="pill"; } } }
         } } });
     } else if(ytFailed && !host.dataset.mounted){
       host.dataset.mounted = "1";
       var rb0=document.getElementById("rate_"+i); if(rb0) rb0.style.display="none";
-      host.innerHTML = '<a href="https://www.youtube.com/watch?v='+v.id+'" target="_blank" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none;font-weight:800;background:#123A33;">▶ 유튜브 앱에서 보기</a>';
+      var g0 = segOf(v);
+      host.innerHTML = '<a href="https://www.youtube.com/watch?v='+v.id+(g0.s?'&t='+g0.s+'s':'')+'" target="_blank" style="position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none;font-weight:800;background:#123A33;">▶ 유튜브 앱에서 보기'+(g0.on?' ('+fmt(g0.s)+(g0.e?' ~ '+fmt(g0.e):'')+')':'')+'</a>';
       armManual(i, v, 0);
     }
   });
 }
 function armManual(i, v, delay){ // 끝까지 재생 감지가 안 될 때: 재생 시간(또는 60초) 뒤 수동 완료 버튼
   var b = document.getElementById("man_"+i); if(!b || b.dataset.armed) return; b.dataset.armed="1";
-  var wait = delay!=null ? delay : Math.max(30, Math.round((v.dur||60)*0.8))*1000;
+  var wait = delay!=null ? delay : Math.max(30, Math.round((segLen(v,0)||v.dur||60)*0.8))*1000;
   setTimeout(function(){ b.classList.remove("hidden"); b.onclick = function(){ if(confirm("영상을 끝까지 보셨나요?")) markWatched(v.id); }; }, wait);
 }
 function markWatched(id){ state.watched[id] = new Date().toISOString(); persist(); renderVideos(); renderSign(); updateProg(); }
@@ -353,7 +380,7 @@ function codeOf(p){ return "EDU1:" + btoa(unescape(encodeURIComponent(JSON.strin
 function showFallback(p, failed){ $("#fallback").classList.remove("hidden"); $("#code").textContent = codeOf(p); $("#fbHint").textContent = failed ? "서버로 보내지 못했습니다. 아래 수강 확인 코드를 복사해 사무실(품질관리팀)에 카톡으로 보내 주세요." : "전송되었습니다. 필요하면 아래 코드로도 사무실에 전달할 수 있습니다."; }
 $("#btnCopy").onclick = function(){ var t = $("#code").textContent; if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ alert("복사했습니다. 카톡으로 붙여넣어 보내 주세요."); }); else { var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); alert("복사했습니다."); } };
 $("#btnRetry").onclick = function(){ var p = lastPayload || state.payload; if(!p){ alert("보낼 기록이 없습니다. 「처음부터 다시 제출하기」로 진행해 주세요."); return; } $("#btnDone").disabled=false; submit(p); };
-$("#btnRedo").onclick = function(){ if(!confirm("이 달 수강을 처음부터 다시 진행할까요? (기존 제출 상태가 초기화됩니다)")) return; state.read=false; state.watched={}; state.marks={}; state.answers={}; state.done=false; state.sent=false; state.payload=null; persist(); ctx.clearRect(0,0,cv.width,cv.height); hasSig=false; $("#cardDone").classList.add("hidden"); $("#btnDone").textContent="수강 완료 · 서명 제출"; renderCourse(); window.scrollTo({top:0,behavior:"smooth"}); };
+$("#btnRedo").onclick = function(){ if(!confirm("이 달 수강을 처음부터 다시 진행할까요? (기존 제출 상태가 초기화됩니다)")) return; state.read=false; state.watched={}; state.vp={}; state.marks={}; state.answers={}; state.done=false; state.sent=false; state.payload=null; persist(); ctx.clearRect(0,0,cv.width,cv.height); hasSig=false; $("#cardDone").classList.add("hidden"); $("#btnDone").textContent="수강 완료 · 서명 제출"; renderCourse(); window.scrollTo({top:0,behavior:"smooth"}); };
 function updateProg(){ var m=month(); if(!state.name||!m){ $("#progB").style.width="0%"; $("#progP").textContent="0%"; return; } var vs=(m.videos||[]), Q=(m.quiz||[]); var optV = !!m.videoOptional; var total = 1+(optV?0:vs.length)+Q.length, done = (state.read?1:0)+(optV?0:vs.filter(function(v){return state.watched[v.id];}).length)+Q.filter(function(_,i){return (state.answers[i]||{}).done;}).length; var p=Math.round(done/total*100); $("#progB").style.width=p+"%"; $("#progP").textContent=p+"%"; $("#progT").textContent = state.done ? "제출 완료 🎉" : (p>=100 ? "학습 완료 · 서명 후 제출" : "진행률"); }
 if(!state.name){ var nowd = new Date(); state.month = (nowd.getFullYear()===DATA.year) ? nowd.getMonth() : (DATA.defaultMonth!=null ? DATA.defaultMonth : 0); }
 // 홈 화면 설치(PWA): 서비스 워커 등록 + 설치 배너
